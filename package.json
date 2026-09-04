@@ -24,7 +24,7 @@
 	"scripts": {
 		"prepare": "node -e \"import('node:child_process').then(({execSync})=>{try{execSync('git rev-parse --is-inside-work-tree',{stdio:'ignore'});execSync('git config core.hooksPath .githooks')}catch{}})\" && node tools.mjs install",
 		"fix": "concurrently -m 1 --group \"prettier --write .\" \"eslint . --fix --cache\" \"markdownlint-cli2 --fix \\\"**/*.md\\\"\" \"textlint --fix \\\"**/*.md\\\"\"",
-		"check": "concurrently --group \"prettier --check .\" \"eslint . --no-cache -f unix\" \"tsc --noEmit --pretty false\" \"markdownlint-cli2 \\\"**/*.md\\\"\" \"textlint -f compact \\\"**/*.md\\\"\" \"knip --no-progress\" \"jscpd .\"",
+		"check": "concurrently --group \"prettier --check .\" \"eslint . --no-cache -f unix\" \"tsc --noEmit --pretty false\" \"markdownlint-cli2 \\\"**/*.md\\\"\" \"textlint -f compact \\\"**/*.md\\\"\" \"knip --no-progress\" \"jscpd .\" \"node tools.mjs run actionlint\"",
 		"unit": "vitest run unit",
 		"build:npm": "tsup src/credact.ts --format esm --target node22 --clean",
 		"build:exe": "node build.mjs",
