@@ -1,3 +1,11 @@
+// eslint-disable-next-line comment-rules/no-restricted-comments
+/*
+ * Reimplements the cross-platform command resolution and spawn argument handling of
+ * cross-spawn (MIT, Made With MOXY Lda), with the executable lookup of which and isexe
+ * (ISC, Isaac Z. Schlueter and Contributors), the PATH key lookup of path-key (MIT,
+ * Sindre Sorhus), and the shebang parse of shebang-command (MIT, Kevin Mårtensson) and
+ * shebang-regex (MIT, Sindre Sorhus). LICENSE carries their notices.
+ */
 import { spawn as nodeSpawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import { openSync, readSync, closeSync, statSync } from "node:fs";
 import { join, normalize, resolve } from "node:path";
