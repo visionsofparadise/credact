@@ -3,5 +3,11 @@
 	"entry": ["src/credact.ts"],
 	"project": ["src/**/*.{ts,tsx}"],
 	"ignore": [],
-	"ignoreDependencies": ["prettier", "@commitlint/cli", "textlint-filter-rule-comments", "textlint-rule-no-dead-link"]
+	"ignoreDependencies": [
+		"prettier",
+		"@commitlint/cli",
+		"textlint-filter-rule-comments",
+		"textlint-rule-no-dead-link",
+		"bun"
+	]
 }
