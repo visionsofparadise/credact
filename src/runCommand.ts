@@ -1,7 +1,7 @@
 import { constants as osConstants } from "node:os";
+import spawn from "cross-spawn";
 import { CredactError, type Invocation } from "./parseArguments";
 import { redactBuffer } from "./redactBuffer";
-import { spawn } from "./spawn";
 import { terminateChild } from "./terminateChild";
 import type { ResolvedSecret } from "./resolveSecrets";
 import type { ChildProcess } from "node:child_process";
