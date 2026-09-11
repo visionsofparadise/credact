@@ -155,4 +155,9 @@ fn rejects_invalid_references() {
     .unwrap_err();
 
     assert_eq!(error.message, "assignment reference is invalid");
+
+    let error =
+        parse_arguments(arguments(&["TOKEN=keepassxc://a:\\/f", "--", "node"])).unwrap_err();
+
+    assert_eq!(error.message, "assignment reference is invalid");
 }
