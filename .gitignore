@@ -1,7 +1,12 @@
 node_modules/
 dist/
-tsconfig.tsbuildinfo
+out/
+build/
+coverage/
 .tools/
 .scratch/
+*.tsbuildinfo
 .eslintcache
-release/
+.stylelintcache
+target/
+gen/

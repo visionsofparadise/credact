@@ -28,6 +28,7 @@ function platformKey() {
 	if (platform === "win32" && arch === "x64") return "windows-64bit";
 	if (platform === "linux" && arch === "x64") return "Linux-64bit";
 	if (platform === "darwin" && arch === "arm64") return "macOS-ARM64";
+	if (platform === "darwin" && arch === "x64") return "macOS-64bit";
 	console.error(`unsupported platform: ${platform}/${arch}`);
 	process.exit(1);
 }

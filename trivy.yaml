@@ -13,3 +13,6 @@ scan:
       - "**/.scratch"
       - "**/scratch"
       - "**/.git"
+      - "**/target"
+      - "**/gen"
+      - "**/.tools"
