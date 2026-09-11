@@ -154,17 +154,19 @@ jobs:
          - name: Install, run, and remove the Debian package and run the AppImage
            if: matrix.target == 'x86_64-unknown-linux-musl'
            run: |
-              test "$(dpkg-deb --field out/make/credact-${VERSION}-linux-amd64.deb Architecture)" = amd64
-              sudo dpkg -i out/make/credact-${VERSION}-linux-amd64.deb
+              test "$(dpkg-deb --field "out/make/credact-${VERSION}-linux-amd64.deb" Architecture)" = amd64
+              sudo dpkg -i "out/make/credact-${VERSION}-linux-amd64.deb"
               test "$(command -v credact)" = /usr/bin/credact
               credact --help
               sudo dpkg -r credact
-              chmod +x out/make/credact-${VERSION}-linux-x86_64.AppImage
-              APPIMAGE_EXTRACT_AND_RUN=1 out/make/credact-${VERSION}-linux-x86_64.AppImage --help
+              chmod +x "out/make/credact-${VERSION}-linux-x86_64.AppImage"
+              ls -la "out/make/credact-${VERSION}-linux-x86_64.AppImage"
+              file "out/make/credact-${VERSION}-linux-x86_64.AppImage"
+              APPIMAGE_EXTRACT_AND_RUN=1 "out/make/credact-${VERSION}-linux-x86_64.AppImage" --help
          - name: Run the binary inside the mounted DMG
            if: runner.os == 'macOS'
            run: |
-              hdiutil attach -nobrowse -readonly -mountpoint "$RUNNER_TEMP/credact-dmg" out/make/credact-${VERSION}-${{ matrix.platform }}.dmg
+              hdiutil attach -nobrowse -readonly -mountpoint "$RUNNER_TEMP/credact-dmg" "out/make/credact-${VERSION}-${{ matrix.platform }}.dmg"
               "$RUNNER_TEMP/credact-dmg/credact.app/Contents/MacOS/credact" --help
               hdiutil detach "$RUNNER_TEMP/credact-dmg"
          - name: Carry the licence notices beside the release files
