@@ -6,33 +6,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const repositoryRoot = fileURLToPath(new URL(".", import.meta.url));
-const platformNames = { win32: "windows", linux: "linux", darwin: "darwin" };
-const platformName = platformNames[process.platform];
+const repositoryRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..");
+const binaryPath =
+	process.argv[2] ??
+	join(repositoryRoot, "target", "release", process.platform === "win32" ? "credact.exe" : "credact");
 
-if (platformName === undefined) {
-	console.error(`no credact binary is built for ${process.platform}`);
+if (!existsSync(binaryPath)) {
+	console.error(`missing artifact at ${binaryPath}`);
 	process.exit(1);
 }
-
-const bundlePath = join(repositoryRoot, "dist", "credact.js");
-const binaryPath = join(
-	repositoryRoot,
-	"release",
-	`credact-${platformName}-${process.arch}${process.platform === "win32" ? ".exe" : ""}`,
-);
-
-for (const artifact of [bundlePath, binaryPath]) {
-	if (!existsSync(artifact)) {
-		console.error(`missing artifact at ${artifact}`);
-		process.exit(1);
-	}
-}
-
-const launchers = [
-	{ name: "npm bundle", command: process.execPath, prefix: [bundlePath] },
-	{ name: "compiled executable", command: binaryPath, prefix: [] },
-];
 
 const usage = "Usage: credact [--no-output-scan] SOURCE [...] -- COMMAND [ARG ...]";
 const absentSocket =
@@ -113,36 +95,34 @@ const environmentOf = (overrides) => {
 	return environment;
 };
 
-const fail = (check, launcher, comparison, expectation, actual) => {
-	console.error(`${check.name} [${launcher.name}]: ${comparison} ${expectation.description}`);
+const fail = (check, comparison, expectation, actual) => {
+	console.error(`${check.name}: ${comparison} ${expectation.description}`);
 	console.error(`  actual ${JSON.stringify(actual)}`);
 	process.exit(1);
 };
 
-for (const launcher of launchers) {
-	for (const check of checks) {
-		const result = spawnSync(launcher.command, [...launcher.prefix, ...check.args], {
-			cwd: repositoryRoot,
-			env: environmentOf(check.environment),
-			encoding: "utf8",
-			timeout: 60_000,
-		});
+for (const check of checks) {
+	const result = spawnSync(binaryPath, check.args, {
+		cwd: repositoryRoot,
+		env: environmentOf(check.environment),
+		encoding: "utf8",
+		timeout: 60_000,
+	});
 
-		if (result.error !== undefined) {
-			console.error(`${check.name} [${launcher.name}]: ${result.error.message}`);
-			process.exit(1);
-		}
-
-		for (const [comparison, expectation, actual] of [
-			["exit code", check.exitCode, result.status],
-			["stdout", check.stdout, result.stdout],
-			["stderr", check.stderr, result.stderr],
-		]) {
-			if (!expectation.matches(actual)) {
-				fail(check, launcher, comparison, expectation, actual);
-			}
-		}
-
-		console.log(`ok ${check.name} [${launcher.name}]`);
+	if (result.error !== undefined) {
+		console.error(`${check.name}: ${result.error.message}`);
+		process.exit(1);
 	}
+
+	for (const [comparison, expectation, actual] of [
+		["exit code", check.exitCode, result.status],
+		["stdout", check.stdout, result.stdout],
+		["stderr", check.stderr, result.stderr],
+	]) {
+		if (!expectation.matches(actual)) {
+			fail(check, comparison, expectation, actual);
+		}
+	}
+
+	console.log(`ok ${check.name}`);
 }
