@@ -5,14 +5,16 @@ use zeroize::Zeroizing;
 use crate::create_secret_representations::create_secret_representations;
 
 pub fn redact_buffer<'a>(input: &'a [u8], values: &[&str]) -> Cow<'a, [u8]> {
-    let mut seen: std::collections::HashSet<Vec<u8>> = std::collections::HashSet::new();
     let mut patterns: Vec<Zeroizing<Vec<u8>>> = Vec::new();
 
     for value in values {
         for representation in create_secret_representations(value) {
             let bytes = representation.into_bytes();
 
-            if seen.insert(bytes.clone()) {
+            if !patterns
+                .iter()
+                .any(|pattern| pattern.as_slice() == bytes.as_slice())
+            {
                 patterns.push(Zeroizing::new(bytes));
             }
         }
@@ -48,12 +50,12 @@ pub fn redact_buffer<'a>(input: &'a [u8], values: &[&str]) -> Cow<'a, [u8]> {
                 read += matched_length;
                 removed = true;
 
-                let k = std::cmp::min(automaton.max_pattern_len() - 1, write);
+                let replay_count = std::cmp::min(automaton.max_pattern_len() - 1, write);
 
-                buffer.copy_within(write - k..write, read - k);
+                buffer.copy_within(write - replay_count..write, read - replay_count);
 
-                write -= k;
-                read -= k;
+                write -= replay_count;
+                read -= replay_count;
             }
         }
     }
