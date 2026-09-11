@@ -54,3 +54,124 @@ jobs:
               persist-credentials: false
          - run: rustup toolchain install 1.88.0 --profile minimal
          - run: cargo +1.88.0 check --locked --all-targets
+
+   notices:
+      runs-on: ubuntu-24.04
+      timeout-minutes: 30
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+           with:
+              persist-credentials: false
+         - name: Install pinned Rust toolchain
+           run: rustup show
+         - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+           with:
+              key: notices
+         - run: cargo install cargo-about --version 0.9.2 --locked --features cli
+         - run: cargo about generate --fail about.hbs -o THIRD-PARTY-NOTICES.txt
+         - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+           with:
+              name: notices
+              path: THIRD-PARTY-NOTICES.txt
+              if-no-files-found: error
+
+   build:
+      needs: notices
+      strategy:
+         fail-fast: false
+         matrix:
+            include:
+               - target: x86_64-pc-windows-msvc
+                 os: windows-2025
+                 platform: windows-x64
+                 installers: true
+               - target: aarch64-pc-windows-msvc
+                 os: windows-11-arm
+                 platform: windows-arm64
+                 installers: true
+               - target: x86_64-unknown-linux-musl
+                 os: ubuntu-24.04
+                 platform: linux-x64
+                 installers: true
+               - target: aarch64-unknown-linux-musl
+                 os: ubuntu-24.04-arm
+                 platform: linux-arm64
+                 installers: false
+               - target: aarch64-apple-darwin
+                 os: macos-15
+                 platform: mac-arm64
+                 installers: true
+               - target: x86_64-apple-darwin
+                 os: macos-15-intel
+                 platform: mac-x64
+                 installers: true
+      runs-on: ${{ matrix.os }}
+      timeout-minutes: 90
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+           with:
+              persist-credentials: false
+         - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+           with:
+              node-version: 24
+         - name: Install pinned Rust toolchain
+           run: rustup show
+         - run: rustup target add ${{ matrix.target }}
+         - name: Read the package version
+           shell: bash
+           run: |
+              node -e '
+              const { execFileSync } = require("node:child_process");
+              const { appendFileSync } = require("node:fs");
+              const metadata = execFileSync("cargo", ["metadata", "--no-deps", "--format-version", "1"], { encoding: "utf8" });
+              appendFileSync(process.env.GITHUB_ENV, "VERSION=" + JSON.parse(metadata).packages[0].version + "\n");
+              '
+         - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+           with:
+              key: build-${{ matrix.target }}
+         - name: Install cargo-packager
+           if: matrix.installers
+           run: cargo install cargo-packager --version 0.11.8 --locked
+         - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+           with:
+              name: notices
+         - run: node scripts/package.mjs ${{ matrix.target }}
+         - name: Smoke the raw binary
+           run: node scripts/smoke.mjs out/make/credact-${{ env.VERSION }}-${{ matrix.target }}${{ runner.os == 'Windows' && '.exe' || '' }}
+         - name: Install, run, and uninstall the Windows installer
+           if: runner.os == 'Windows'
+           shell: pwsh
+           run: >-
+              ./scripts/testWindowsInstaller.ps1 -InstallerPath out/make/credact-${{ env.VERSION }}-${{ matrix.platform
+              }}.exe -ExpectedExecutablePath target/${{ matrix.target }}/release/credact.exe
+         - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+           if: always() && runner.os == 'Windows'
+           with:
+              name: installer-report-${{ matrix.platform }}
+              path: .scratch/installer/report.json
+              include-hidden-files: true
+              if-no-files-found: warn
+         - name: Install, run, and remove the Debian package and run the AppImage
+           if: matrix.target == 'x86_64-unknown-linux-musl'
+           run: |
+              test "$(dpkg-deb --field out/make/credact-${VERSION}-linux-amd64.deb Architecture)" = amd64
+              sudo dpkg -i out/make/credact-${VERSION}-linux-amd64.deb
+              test "$(command -v credact)" = /usr/bin/credact
+              credact --help
+              sudo dpkg -r credact
+              chmod +x out/make/credact-${VERSION}-linux-x86_64.AppImage
+              APPIMAGE_EXTRACT_AND_RUN=1 out/make/credact-${VERSION}-linux-x86_64.AppImage --help
+         - name: Run the binary inside the mounted DMG
+           if: runner.os == 'macOS'
+           run: |
+              hdiutil attach -nobrowse -readonly -mountpoint "$RUNNER_TEMP/credact-dmg" out/make/credact-${VERSION}-${{ matrix.platform }}.dmg
+              "$RUNNER_TEMP/credact-dmg/credact.app/Contents/MacOS/credact" --help
+              hdiutil detach "$RUNNER_TEMP/credact-dmg"
+         - name: Carry the licence notices beside the release files
+           shell: bash
+           run: cp THIRD-PARTY-NOTICES.txt out/make/
+         - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+           with:
+              name: release-${{ matrix.target }}
+              path: out/make/*
+              if-no-files-found: error

@@ -31,3 +31,13 @@ strip = true
 
 [target.'cfg(windows)'.dependencies]
 which = "8.0.6"
+
+[package.metadata.packager]
+product-name = "credact"
+identifier = "com.visionsofparadise.credact"
+publisher = "Matt Cavender"
+icons = ["packaging/icon.png"]
+
+[package.metadata.packager.nsis]
+installer-mode = "currentUser"
+template = "packaging/installer.nsi"

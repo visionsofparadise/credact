@@ -17,7 +17,7 @@
 	"scripts": {
 		"start": "cargo run --locked --",
 		"build": "cargo build --locked --release",
-		"unit": "cargo test --locked -- --skip ::integration::",
+		"unit": "cargo test --locked -- --skip ::integration:: && node --test scripts/release.unit.test.mjs",
 		"integration": "cargo test --locked ::integration::",
 		"smoke": "node scripts/smoke.mjs",
 		"prepare": "node -e \"const c=require('node:child_process');if(c.spawnSync('git',['rev-parse','--is-inside-work-tree'],{stdio:'ignore'}).status===0)c.execFileSync('git',['config','core.hooksPath','.githooks'])\" && node tools.mjs install && cargo install styling-lint --version 0.1.0 --locked && cargo install cargo-machete --version 0.9.2 --locked",
