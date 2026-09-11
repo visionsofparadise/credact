@@ -87,6 +87,14 @@ impl Fake {
     }
 }
 
+fn incomplete_flood_of(count: usize) -> Vec<u8> {
+    let mut flood = br#"{"action":"test-associate","message":""#.to_vec();
+
+    flood.extend(std::iter::repeat_n(b'a', count));
+
+    flood
+}
+
 fn send_reply(
     writer: &mut PipeWriter,
     session: &SalsaBox,
@@ -99,7 +107,7 @@ fn send_reply(
     }
 
     if let Some(count) = scripted.flood_bytes {
-        let _ = writer.write_all(&vec![b'{'; count]);
+        let _ = writer.write_all(&incomplete_flood_of(count));
 
         return;
     }
@@ -1080,11 +1088,18 @@ fn rejects_a_reply_sealed_under_a_different_key() {
 fn fails_closed_when_an_incomplete_reply_exceeds_the_buffer_cap() {
     let directory = create_directory();
     let record_path = write_stored_record(&directory, "credact", &stored_id_key());
+    let flood_bytes = MAXIMUM_PENDING_BYTES + READ_CHUNK_BYTES;
+    let (values, consumed) = split_json_values(&incomplete_flood_of(flood_bytes))
+        .expect("the flood is an incomplete value rather than a parse failure");
+
+    assert!(values.is_empty());
+    assert_eq!(consumed, 0);
+
     let (fake, connector) = start_fake(
         scripted_for(
             "test-associate",
             ScriptedReply {
-                flood_bytes: Some(MAXIMUM_PENDING_BYTES + 1),
+                flood_bytes: Some(flood_bytes),
                 ..ScriptedReply::default()
             },
         ),
