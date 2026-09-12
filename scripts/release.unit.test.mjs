@@ -58,6 +58,20 @@ test("normalizes every packaged target to the release asset names", () => {
 	writeChecksums(join(directory, "out", "make"), "0.2.0");
 });
 
+test("names every file cargo-packager writes for a version", () => {
+	assert.deepEqual(
+		Object.keys(targets).flatMap((triple) => packageNamesOf("0.2.0", triple).map(({ source }) => source)),
+		[
+			"credact_0.2.0_x64-setup.exe",
+			"credact_0.2.0_arm64-setup.exe",
+			"credact_0.2.0_x86_64.AppImage",
+			"credact_0.2.0_amd64.deb",
+			"credact_0.2.0_aarch64.dmg",
+			"credact_0.2.0_x64.dmg",
+		],
+	);
+});
+
 test("rejects an unknown target triple", () => {
 	assert.throws(() => packageNamesOf("0.2.0", "riscv64gc-unknown-linux-gnu"), /Unknown target triple/u);
 });
