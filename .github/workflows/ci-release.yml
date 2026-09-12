@@ -135,6 +135,12 @@ jobs:
          - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
            with:
               name: notices
+         - name: Seed the AppImage wrapper cargo-packager copies into the AppDir
+           if: matrix.target == 'x86_64-unknown-linux-musl'
+           run: |
+              tools="${XDG_CACHE_HOME:-$HOME/.cache}/.cargo-packager/AppImage"
+              mkdir -p "$tools"
+              install -m 0755 packaging/AppRun "$tools/AppRun-x86_64"
          - run: node scripts/package.mjs ${{ matrix.target }}
          - name: Smoke the raw binary
            run: node scripts/smoke.mjs out/make/credact-${{ env.VERSION }}-${{ matrix.target }}${{ runner.os == 'Windows' && '.exe' || '' }}
@@ -159,31 +165,8 @@ jobs:
               test "$(command -v credact)" = /usr/bin/credact
               credact --help
               sudo dpkg -r credact
-              image="$PWD/out/make/credact-${VERSION}-linux-x86_64.AppImage"
-              chmod +x "$image"
-              ls -la "$image"
-              file "$image"
-              if (cd "$RUNNER_TEMP" && "$image" --appimage-extract > /dev/null); then
-                 echo "diagnosis: --appimage-extract succeeded"
-              else
-                 echo "diagnosis: --appimage-extract failed"
-              fi
-              if "$image" --help; then
-                 echo "diagnosis: mounted run succeeded"
-              else
-                 echo "diagnosis: mounted run failed"
-              fi
-              root="$RUNNER_TEMP/squashfs-root"
-              ls -la "$root" || true
-              file "$root/AppRun" || true
-              find "$root/usr" -maxdepth 3 || true
-              cat "$root"/*.desktop || true
-              if "$root/AppRun" --help; then
-                 echo "diagnosis: extracted AppRun succeeded"
-              else
-                 echo "diagnosis: extracted AppRun failed"
-              fi
-              APPIMAGE_EXTRACT_AND_RUN=1 "$image" --help
+              chmod +x "out/make/credact-${VERSION}-linux-x86_64.AppImage"
+              APPIMAGE_EXTRACT_AND_RUN=1 "out/make/credact-${VERSION}-linux-x86_64.AppImage" --help
          - name: Run the binary inside the mounted DMG
            if: runner.os == 'macOS'
            run: |
