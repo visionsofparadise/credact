@@ -16,7 +16,6 @@ const ABSENT_ENVIRONMENT_CLASS: &str = "environment value was absent";
 const AMBIGUOUS_ENVIRONMENT_CLASS: &str = "environment name was ambiguous";
 const NON_UTF8_ENVIRONMENT_CLASS: &str = "environment value was not valid UTF-8";
 const EMPTY_ENVIRONMENT_CLASS: &str = "environment value was empty";
-const UNRESOLVED_SOURCE_CLASS: &str = "secret resolution failed";
 
 pub struct ResolvedSecret {
     pub source: SecretSource,
@@ -180,52 +179,30 @@ pub fn resolve_secrets(
 ) -> ResolutionOutcome {
     let mut environment_results: HashMap<String, SourceResult> = HashMap::new();
     let mut reference_results: HashMap<String, SourceResult> = HashMap::new();
-
-    for source in sources {
-        match source {
-            SecretSource::Environment(source) => {
-                environment_results
-                    .entry(source.name.to_ascii_lowercase())
-                    .or_insert_with(|| resolved_environment_of(&source.name, environment));
-            }
-            SecretSource::KeePass(source) => {
-                if !reference_results.contains_key(&source.reference) {
-                    let result = resolved_reference_of(&source.reference, lookup);
-
-                    reference_results.insert(source.reference.clone(), result);
-                }
-            }
-        }
-    }
-
     let mut secrets: Vec<ResolvedSecret> = Vec::new();
     let mut failure: Option<CredactError> = None;
 
     for source in sources {
         let result = match source {
-            SecretSource::Environment(source) => {
-                environment_results.get(&source.name.to_ascii_lowercase())
-            }
-            SecretSource::KeePass(source) => reference_results.get(&source.reference),
+            SecretSource::Environment(environment_source) => environment_results
+                .entry(environment_source.name.to_ascii_lowercase())
+                .or_insert_with(|| resolved_environment_of(&environment_source.name, environment)),
+            SecretSource::KeePass(keepass_source) => reference_results
+                .entry(keepass_source.reference.clone())
+                .or_insert_with(|| resolved_reference_of(&keepass_source.reference, lookup)),
         };
 
-        if let Some(SourceResult::Success(value)) = result {
-            secrets.push(ResolvedSecret {
+        match result {
+            SourceResult::Success(value) => secrets.push(ResolvedSecret {
                 source: source.clone(),
                 value: value.clone(),
-            });
-
-            continue;
+            }),
+            SourceResult::Failure(failure_class) => {
+                failure.get_or_insert_with(|| {
+                    CredactError::new(1, format!("credact: {}: {failure_class}", source.name()))
+                });
+            }
         }
-
-        let failure_class = match result {
-            Some(SourceResult::Failure(failure_class)) => failure_class.as_str(),
-            _ => UNRESOLVED_SOURCE_CLASS,
-        };
-
-        failure.get_or_insert_with(|| {
-            CredactError::new(1, format!("credact: {}: {failure_class}", source.name()))
-        });
     }
 
     match failure {
