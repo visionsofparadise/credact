@@ -58,7 +58,7 @@ test("normalizes every packaged target to the release asset names", () => {
 	writeChecksums(join(directory, "out", "make"), "0.2.0");
 });
 
-test("names every file cargo-packager writes for a version", () => {
+test("pins the cargo-packager output names credact expects", () => {
 	assert.deepEqual(
 		Object.keys(targets).flatMap((triple) => packageNamesOf("0.2.0", triple).map(({ source }) => source)),
 		[
