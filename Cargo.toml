@@ -41,3 +41,6 @@ icons = ["packaging/icon.png"]
 [package.metadata.packager.nsis]
 installer-mode = "currentUser"
 template = "packaging/installer.nsi"
+
+[package.metadata.packager.appimage]
+files = { "target/x86_64-unknown-linux-musl/release/credact" = "usr/share/credact/credact" }
