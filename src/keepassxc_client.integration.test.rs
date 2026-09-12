@@ -495,7 +495,7 @@ fn renews_the_deadline_for_each_lookup_rather_than_spending_one_across_the_sessi
             if action == "get-logins" {
                 return ScriptedReply {
                     body: Some(json!({ "entries": scripted_entries() })),
-                    delay: (seen > 0).then(|| Duration::from_millis(250)),
+                    delay: (seen > 0).then(|| Duration::from_millis(400)),
                     ..ScriptedReply::default()
                 };
             }
@@ -507,7 +507,7 @@ fn renews_the_deadline_for_each_lookup_rather_than_spending_one_across_the_sessi
     let mut session = LookupSession::with_connector(
         options_of(
             &record_path,
-            Duration::from_millis(400),
+            Duration::from_millis(1000),
             DEFAULT_UNLOCK_INTERVAL,
         ),
         connector,
@@ -517,7 +517,7 @@ fn renews_the_deadline_for_each_lookup_rather_than_spending_one_across_the_sessi
         .lookup("keepassxc://synthetic/password")
         .expect("the first lookup succeeds");
 
-    thread::sleep(Duration::from_millis(250));
+    thread::sleep(Duration::from_millis(800));
 
     assert_eq!(
         session
@@ -836,15 +836,16 @@ fn fails_closed_when_the_database_never_unlocks() {
     );
     let outcome = lookup_once(
         connector,
-        options_of(
-            &record_path,
-            Duration::from_millis(100),
-            Duration::from_millis(10),
-        ),
+        options_of(&record_path, TEST_DEADLINE, Duration::from_millis(10)),
         "keepassxc://synthetic/password",
     );
+    let polls = fake.sent_for("get-databasehash");
 
     assert_eq!(failure_of_lookup(outcome), DATABASE_LOCKED_CLASS);
+    assert!(
+        polls.len() > 1,
+        "the deadline expired inside the unlock poll rather than the handshake"
+    );
     assert_eq!(wait_for_close(&fake), 1);
 
     let _ = std::fs::remove_dir_all(&directory);
@@ -1163,15 +1164,15 @@ fn times_out_when_the_server_never_replies() {
     );
     let outcome = lookup_once(
         connector,
-        options_of(
-            &record_path,
-            Duration::from_millis(100),
-            DEFAULT_UNLOCK_INTERVAL,
-        ),
+        options_of(&record_path, TEST_DEADLINE, DEFAULT_UNLOCK_INTERVAL),
         "keepassxc://synthetic/password",
     );
 
     assert_eq!(failure_of_lookup(outcome), TIMED_OUT_CLASS);
+    assert_eq!(
+        fake.actions(),
+        ["change-public-keys", "get-databasehash", "test-associate"]
+    );
     assert_eq!(wait_for_close(&fake), 1);
 
     let _ = std::fs::remove_dir_all(&directory);
