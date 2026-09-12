@@ -512,9 +512,11 @@ SectionEnd
 !macroend
 
 Section CredactUserPath
-  StrCpy $R9 $INSTDIR
-  System::Call 'kernel32::SetEnvironmentVariable(t "CREDACT_INSTALL_DIR", tr R9)'
-  nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop';$$d=$$env:CREDACT_INSTALL_DIR;if(-not $$d){throw 'CREDACT_INSTALL_DIR was empty'};$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if(($$p -split ';') -notcontains $$d){$$k.SetValue('Path',(($$p.TrimEnd(';')+';'+$$d).TrimStart(';')),[Microsoft.Win32.RegistryValueKind]::ExpandString)};$$k.Close();[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
+  System::Call 'kernel32::SetEnvironmentVariable(t "CREDACT_INSTALL_DIR", t "$INSTDIR")i.r0'
+  ${If} $0 == 0
+    !insertmacro ReportUserPathFailure "an unset CREDACT_INSTALL_DIR"
+  ${EndIf}
+  nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop';$$d=$$env:CREDACT_INSTALL_DIR;if(-not $$d){throw 'CREDACT_INSTALL_DIR was empty'};$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if(($$p -split ';') -notcontains $$d){$$k.SetValue('Path',(($$p.TrimEnd(';')+';'+$$d).TrimStart(';')),[Microsoft.Win32.RegistryValueKind]::ExpandString)};$$q=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$k.Close();if(($$q -split ';') -notcontains $$d){throw 'the user PATH is missing the install directory'};[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
   Pop $0
   ${If} $0 != 0
     !insertmacro ReportUserPathFailure $0
@@ -535,9 +537,11 @@ Function un.onInit
 FunctionEnd
 
 Section un.CredactUserPath
-  StrCpy $R9 $INSTDIR
-  System::Call 'kernel32::SetEnvironmentVariable(t "CREDACT_INSTALL_DIR", tr R9)'
-  nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop';$$d=$$env:CREDACT_INSTALL_DIR;if(-not $$d){throw 'CREDACT_INSTALL_DIR was empty'};$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$k.SetValue('Path',((($$p -split ';') | Where-Object { $$_ -and $$_ -ne $$d }) -join ';'),[Microsoft.Win32.RegistryValueKind]::ExpandString);$$k.Close();[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
+  System::Call 'kernel32::SetEnvironmentVariable(t "CREDACT_INSTALL_DIR", t "$INSTDIR")i.r0'
+  ${If} $0 == 0
+    !insertmacro ReportUserPathFailure "an unset CREDACT_INSTALL_DIR"
+  ${EndIf}
+  nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop';$$d=$$env:CREDACT_INSTALL_DIR;if(-not $$d){throw 'CREDACT_INSTALL_DIR was empty'};$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$k.SetValue('Path',((($$p -split ';') | Where-Object { $$_ -and $$_ -ne $$d }) -join ';'),[Microsoft.Win32.RegistryValueKind]::ExpandString);$$q=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$k.Close();if(($$q -split ';') -contains $$d){throw 'the user PATH still holds the install directory'};[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
   Pop $0
   ${If} $0 != 0
     !insertmacro ReportUserPathFailure $0
