@@ -497,29 +497,29 @@ Section Install
   ${IfThen} $PassiveMode == 1 ${|} SetAutoClose true ${|}
 SectionEnd
 
-!macro ReportUserPathFailure Code
-  DetailPrint "credact: editing the user PATH for $INSTDIR failed with ${Code}"
+!macro ReportUserPathFailure Code Remedy
+  DetailPrint "credact: editing the user PATH for $INSTDIR failed with ${Code}; ${Remedy}"
   ${If} ${Silent}
     System::Call 'kernel32::AttachConsole(i -1)i.r1'
     ${If} $1 != 0
       System::Call 'kernel32::GetStdHandle(i -11)i.r1'
       System::Call 'kernel32::SetConsoleTextAttribute(i r1, i 0x0004)'
-      FileWrite $1 "credact: editing the user PATH for $INSTDIR failed with ${Code}$\n"
+      FileWrite $1 "credact: editing the user PATH for $INSTDIR failed with ${Code}; ${Remedy}$\n"
     ${EndIf}
   ${EndIf}
   SetErrorLevel 3
-  Abort "credact: editing the user PATH for $INSTDIR failed with ${Code}"
+  Abort "credact: editing the user PATH for $INSTDIR failed with ${Code}; ${Remedy}"
 !macroend
 
 Section CredactUserPath
   System::Call 'kernel32::SetEnvironmentVariable(t "CREDACT_INSTALL_DIR", t "$INSTDIR")i.r0'
   ${If} $0 == 0
-    !insertmacro ReportUserPathFailure "an unset CREDACT_INSTALL_DIR"
+    !insertmacro ReportUserPathFailure "an unset CREDACT_INSTALL_DIR" "run $INSTDIR\uninstall.exe to remove this partial installation"
   ${EndIf}
   nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop';$$d=$$env:CREDACT_INSTALL_DIR;if(-not $$d){throw 'CREDACT_INSTALL_DIR was empty'};$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if(($$p -split ';') -notcontains $$d){$$k.SetValue('Path',(($$p.TrimEnd(';')+';'+$$d).TrimStart(';')),[Microsoft.Win32.RegistryValueKind]::ExpandString)};$$q=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$k.Close();if(($$q -split ';') -notcontains $$d){throw 'the user PATH is missing the install directory'};[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
   Pop $0
   ${If} $0 != 0
-    !insertmacro ReportUserPathFailure $0
+    !insertmacro ReportUserPathFailure $0 "run $INSTDIR\uninstall.exe to remove this partial installation"
   ${EndIf}
 SectionEnd
 
@@ -539,12 +539,12 @@ FunctionEnd
 Section un.CredactUserPath
   System::Call 'kernel32::SetEnvironmentVariable(t "CREDACT_INSTALL_DIR", t "$INSTDIR")i.r0'
   ${If} $0 == 0
-    !insertmacro ReportUserPathFailure "an unset CREDACT_INSTALL_DIR"
+    !insertmacro ReportUserPathFailure "an unset CREDACT_INSTALL_DIR" "nothing was removed; retry the uninstaller or drop $INSTDIR from the user PATH by hand"
   ${EndIf}
   nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop';$$d=$$env:CREDACT_INSTALL_DIR;if(-not $$d){throw 'CREDACT_INSTALL_DIR was empty'};$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$k.SetValue('Path',((($$p -split ';') | Where-Object { $$_ -and $$_ -ne $$d }) -join ';'),[Microsoft.Win32.RegistryValueKind]::ExpandString);$$q=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$k.Close();if(($$q -split ';') -contains $$d){throw 'the user PATH still holds the install directory'};[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
   Pop $0
   ${If} $0 != 0
-    !insertmacro ReportUserPathFailure $0
+    !insertmacro ReportUserPathFailure $0 "nothing was removed; retry the uninstaller or drop $INSTDIR from the user PATH by hand"
   ${EndIf}
 SectionEnd
 
