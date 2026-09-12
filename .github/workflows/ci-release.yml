@@ -159,10 +159,31 @@ jobs:
               test "$(command -v credact)" = /usr/bin/credact
               credact --help
               sudo dpkg -r credact
-              chmod +x "out/make/credact-${VERSION}-linux-x86_64.AppImage"
-              ls -la "out/make/credact-${VERSION}-linux-x86_64.AppImage"
-              file "out/make/credact-${VERSION}-linux-x86_64.AppImage"
-              APPIMAGE_EXTRACT_AND_RUN=1 "out/make/credact-${VERSION}-linux-x86_64.AppImage" --help
+              image="$PWD/out/make/credact-${VERSION}-linux-x86_64.AppImage"
+              chmod +x "$image"
+              ls -la "$image"
+              file "$image"
+              if (cd "$RUNNER_TEMP" && "$image" --appimage-extract > /dev/null); then
+                 echo "diagnosis: --appimage-extract succeeded"
+              else
+                 echo "diagnosis: --appimage-extract failed"
+              fi
+              if "$image" --help; then
+                 echo "diagnosis: mounted run succeeded"
+              else
+                 echo "diagnosis: mounted run failed"
+              fi
+              root="$RUNNER_TEMP/squashfs-root"
+              ls -la "$root" || true
+              file "$root/AppRun" || true
+              find "$root/usr" -maxdepth 3 || true
+              cat "$root"/*.desktop || true
+              if "$root/AppRun" --help; then
+                 echo "diagnosis: extracted AppRun succeeded"
+              else
+                 echo "diagnosis: extracted AppRun failed"
+              fi
+              APPIMAGE_EXTRACT_AND_RUN=1 "$image" --help
          - name: Run the binary inside the mounted DMG
            if: runner.os == 'macOS'
            run: |
