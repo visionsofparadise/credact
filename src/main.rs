@@ -17,7 +17,7 @@ use resolve_secrets::{resolve_secrets, ResolutionOutcome};
 use run_command::{run_command, RunOptions};
 
 const USAGE: &str = "Usage: credact [--no-output-scan] VAR [...] -- COMMAND [ARG ...]";
-const HELP: &str = "Usage: credact [--no-output-scan] VAR [...] -- COMMAND [ARG ...]\n\nVAR is NAME (read from the environment) or NAME=keepassxc://entry/field.\nResolved values and documented common representations are removed from complete stdout and stderr before release.\n\n  --no-output-scan  Inherit the terminal directly for trusted interactive commands.\n  --help            Show this help when supplied as the only argument.\n";
+const HELP_ELEMENTS: &str = "  --no-output-scan  disables output redaction. (Optional)\n  VAR               either KEY, an environment variable key, or\n                    KEY=keepassxc://entry/field, which resolves a field\n                    from KeePassXC with Browser Integration enabled and\n                    assigns to an environment variable.\n  --                delimits the sources from the command.\n  COMMAND           is the program to run, resolved from PATH.\n  ARG               is passed to the command unaltered.\n";
 
 fn write_stdout(text: &str) {
     let mut stdout = std::io::stdout();
@@ -44,7 +44,7 @@ fn run() -> i32 {
 
     let invocation = match parse_arguments(arguments) {
         Ok(ParseResult::Help) => {
-            write_stdout(HELP);
+            write_stdout(&format!("{USAGE}\n\n{HELP_ELEMENTS}"));
 
             return 0;
         }
