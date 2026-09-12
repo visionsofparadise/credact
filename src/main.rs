@@ -48,6 +48,11 @@ fn run() -> i32 {
 
             return 0;
         }
+        Ok(ParseResult::Version) => {
+            write_stdout(&format!("credact {}\n", env!("CARGO_PKG_VERSION")));
+
+            return 0;
+        }
         Ok(ParseResult::Run(invocation)) => invocation,
         Err(error) => {
             write_diagnostic(&error.message, &[], true);

@@ -37,6 +37,7 @@ pub struct Invocation {
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseResult {
     Help,
+    Version,
     Run(Invocation),
 }
 
@@ -154,8 +155,14 @@ fn parse_source(token: &str) -> Result<SecretSource, CredactError> {
 }
 
 pub fn parse_arguments(argument_values: Vec<OsString>) -> Result<ParseResult, CredactError> {
-    if argument_values.len() == 1 && argument_values[0] == "--help" {
-        return Ok(ParseResult::Help);
+    if let [sole_argument] = argument_values.as_slice() {
+        if sole_argument == "--help" || sole_argument == "-h" {
+            return Ok(ParseResult::Help);
+        }
+
+        if sole_argument == "--version" || sole_argument == "-V" {
+            return Ok(ParseResult::Version);
+        }
     }
 
     let delimiter_index = argument_values.iter().position(|argument| argument == "--");

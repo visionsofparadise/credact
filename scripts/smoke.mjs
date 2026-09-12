@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { versionOf } from "./release.mjs";
+
 const repositoryRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const binaryPath =
 	process.argv[2] ??
@@ -39,6 +41,14 @@ const checks = [
 		args: ["--help"],
 		exitCode: is(0),
 		stdout: startsWith(usage),
+		stderr: is(""),
+	},
+	{
+		name: "version",
+		environment: {},
+		args: ["--version"],
+		exitCode: is(0),
+		stdout: is(`credact ${versionOf()}\n`),
 		stderr: is(""),
 	},
 	{

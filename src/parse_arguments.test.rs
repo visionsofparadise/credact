@@ -16,8 +16,28 @@ fn returns_help_only_for_a_sole_help_token() {
         parse_arguments(arguments(&["--help"])).unwrap(),
         ParseResult::Help
     );
+    assert_eq!(
+        parse_arguments(arguments(&["-h"])).unwrap(),
+        ParseResult::Help
+    );
 
     expect_usage_failure(&["--help", "--", "node"]);
+    expect_usage_failure(&["-h", "--", "node"]);
+}
+
+#[test]
+fn returns_version_only_for_a_sole_version_token() {
+    assert_eq!(
+        parse_arguments(arguments(&["--version"])).unwrap(),
+        ParseResult::Version
+    );
+    assert_eq!(
+        parse_arguments(arguments(&["-V"])).unwrap(),
+        ParseResult::Version
+    );
+
+    expect_usage_failure(&["--version", "--", "node"]);
+    expect_usage_failure(&["-V", "--", "node"]);
 }
 
 #[test]
@@ -54,7 +74,7 @@ fn parses_environment_keepassxc_and_passthrough_sources() {
                 })]
             );
         }
-        ParseResult::Help => panic!("expected a run result"),
+        ParseResult::Help | ParseResult::Version => panic!("expected a run result"),
     }
 }
 
