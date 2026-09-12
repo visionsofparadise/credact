@@ -497,9 +497,28 @@ Section Install
   ${IfThen} $PassiveMode == 1 ${|} SetAutoClose true ${|}
 SectionEnd
 
+!macro ReportUserPathFailure Code
+  DetailPrint "credact: editing the user PATH for $INSTDIR failed with ${Code}"
+  ${If} ${Silent}
+    System::Call 'kernel32::AttachConsole(i -1)i.r1'
+    ${If} $1 != 0
+      System::Call 'kernel32::GetStdHandle(i -11)i.r1'
+      System::Call 'kernel32::SetConsoleTextAttribute(i r1, i 0x0004)'
+      FileWrite $1 "credact: editing the user PATH for $INSTDIR failed with ${Code}$\n"
+    ${EndIf}
+  ${EndIf}
+  SetErrorLevel 3
+  Abort "credact: editing the user PATH for $INSTDIR failed with ${Code}"
+!macroend
+
 Section CredactUserPath
-  nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$d='$INSTDIR';if(($$p -split ';') -notcontains $$d){$$k.SetValue('Path',(($$p.TrimEnd(';')+';'+$$d).TrimStart(';')),[Microsoft.Win32.RegistryValueKind]::ExpandString)};$$k.Close();[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
+  StrCpy $R9 $INSTDIR
+  System::Call 'kernel32::SetEnvironmentVariable(t "CREDACT_INSTALL_DIR", tr R9)'
+  nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop';$$d=$$env:CREDACT_INSTALL_DIR;if(-not $$d){throw 'CREDACT_INSTALL_DIR was empty'};$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if(($$p -split ';') -notcontains $$d){$$k.SetValue('Path',(($$p.TrimEnd(';')+';'+$$d).TrimStart(';')),[Microsoft.Win32.RegistryValueKind]::ExpandString)};$$k.Close();[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
   Pop $0
+  ${If} $0 != 0
+    !insertmacro ReportUserPathFailure $0
+  ${EndIf}
 SectionEnd
 
 Function .onInstSuccess
@@ -516,8 +535,13 @@ Function un.onInit
 FunctionEnd
 
 Section un.CredactUserPath
-  nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$d='$INSTDIR';$$k.SetValue('Path',((($$p -split ';') | Where-Object { $$_ -and $$_ -ne $$d }) -join ';'),[Microsoft.Win32.RegistryValueKind]::ExpandString);$$k.Close();[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
+  StrCpy $R9 $INSTDIR
+  System::Call 'kernel32::SetEnvironmentVariable(t "CREDACT_INSTALL_DIR", tr R9)'
+  nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop';$$d=$$env:CREDACT_INSTALL_DIR;if(-not $$d){throw 'CREDACT_INSTALL_DIR was empty'};$$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$$true);$$p=[string]$$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);$$k.SetValue('Path',((($$p -split ';') | Where-Object { $$_ -and $$_ -ne $$d }) -join ';'),[Microsoft.Win32.RegistryValueKind]::ExpandString);$$k.Close();[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH','1','User');[Environment]::SetEnvironmentVariable('CREDACT_PATH_REFRESH',$$null,'User')"`
   Pop $0
+  ${If} $0 != 0
+    !insertmacro ReportUserPathFailure $0
+  ${EndIf}
 SectionEnd
 
 Section Uninstall
