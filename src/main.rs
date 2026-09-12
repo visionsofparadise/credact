@@ -16,8 +16,8 @@ use redact_buffer::redact_buffer;
 use resolve_secrets::{resolve_secrets, ResolutionOutcome};
 use run_command::{run_command, RunOptions};
 
-const USAGE: &str = "Usage: credact [--no-output-scan] SOURCE [...] -- COMMAND [ARG ...]";
-const HELP: &str = "Usage: credact [--no-output-scan] SOURCE [...] -- COMMAND [ARG ...]\n\nSOURCE is NAME (read from the environment) or NAME=keepassxc://entry/field.\nResolved values and documented common representations are removed from complete stdout and stderr before release.\n\n  --no-output-scan  Inherit the terminal directly for trusted interactive commands.\n  --help            Show this help when supplied as the only argument.\n";
+const USAGE: &str = "Usage: credact [--no-output-scan] VAR [...] -- COMMAND [ARG ...]";
+const HELP: &str = "Usage: credact [--no-output-scan] VAR [...] -- COMMAND [ARG ...]\n\nVAR is NAME (read from the environment) or NAME=keepassxc://entry/field.\nResolved values and documented common representations are removed from complete stdout and stderr before release.\n\n  --no-output-scan  Inherit the terminal directly for trusted interactive commands.\n  --help            Show this help when supplied as the only argument.\n";
 
 fn write_stdout(text: &str) {
     let mut stdout = std::io::stdout();

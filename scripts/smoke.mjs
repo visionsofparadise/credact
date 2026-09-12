@@ -16,7 +16,7 @@ if (!existsSync(binaryPath)) {
 	process.exit(1);
 }
 
-const usage = "Usage: credact [--no-output-scan] SOURCE [...] -- COMMAND [ARG ...]";
+const usage = "Usage: credact [--no-output-scan] VAR [...] -- COMMAND [ARG ...]";
 const absentSocket =
 	process.platform === "win32"
 		? `\\\\.\\pipe\\credact-smoke-absent-${randomUUID()}`
