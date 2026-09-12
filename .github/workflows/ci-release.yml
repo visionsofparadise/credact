@@ -141,6 +141,7 @@ jobs:
               tools="${XDG_CACHE_HOME:-$HOME/.cache}/.cargo-packager/AppImage"
               mkdir -p "$tools"
               install -m 0755 packaging/AppRun "$tools/AppRun-x86_64"
+              ls -la "$tools"
          - run: node scripts/package.mjs ${{ matrix.target }}
          - name: Smoke the raw binary
            run: node scripts/smoke.mjs out/make/credact-${{ env.VERSION }}-${{ matrix.target }}${{ runner.os == 'Windows' && '.exe' || '' }}
@@ -165,8 +166,19 @@ jobs:
               test "$(command -v credact)" = /usr/bin/credact
               credact --help
               sudo dpkg -r credact
-              chmod +x "out/make/credact-${VERSION}-linux-x86_64.AppImage"
-              APPIMAGE_EXTRACT_AND_RUN=1 "out/make/credact-${VERSION}-linux-x86_64.AppImage" --help
+              image="$PWD/out/make/credact-${VERSION}-linux-x86_64.AppImage"
+              chmod +x "$image"
+              root="$RUNNER_TEMP/squashfs-root"
+              rm -rf "$root"
+              (cd "$RUNNER_TEMP" && "$image" --appimage-extract > /dev/null)
+              ls -la "$root/AppRun" "$root/usr/bin/credact"
+              head -c 200 "$root/AppRun" | cat -v
+              if sh -x "$root/AppRun" --help; then
+                 echo "diagnosis: AppRun under sh -x succeeded"
+              else
+                 echo "diagnosis: AppRun under sh -x failed"
+              fi
+              APPIMAGE_EXTRACT_AND_RUN=1 "$image" --help
          - name: Run the binary inside the mounted DMG
            if: runner.os == 'macOS'
            run: |
