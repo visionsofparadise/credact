@@ -171,12 +171,19 @@ jobs:
               root="$RUNNER_TEMP/squashfs-root"
               rm -rf "$root"
               (cd "$RUNNER_TEMP" && "$image" --appimage-extract > /dev/null)
-              ls -la "$root/AppRun" "$root/usr/bin/credact"
-              head -c 200 "$root/AppRun" | cat -v
-              if sh -x "$root/AppRun" --help; then
-                 echo "diagnosis: AppRun under sh -x succeeded"
+              built="target/x86_64-unknown-linux-musl/release/credact"
+              ls -la "$root/AppRun" "$root/usr/bin/credact" "$built"
+              sha256sum "$root/usr/bin/credact" "$built"
+              file "$root/usr/bin/credact" "$built"
+              if "$built" --help > /dev/null; then
+                 echo "diagnosis: the built binary runs"
               else
-                 echo "diagnosis: AppRun under sh -x failed"
+                 echo "diagnosis: the built binary fails"
+              fi
+              if "$root/usr/bin/credact" --help > /dev/null; then
+                 echo "diagnosis: the extracted binary runs"
+              else
+                 echo "diagnosis: the extracted binary fails"
               fi
               APPIMAGE_EXTRACT_AND_RUN=1 "$image" --help
          - name: Run the binary inside the mounted DMG
