@@ -18,6 +18,7 @@ use run_command::{run_command, RunOptions};
 
 const USAGE: &str = "Usage: credact [--no-output-scan] VAR [...] -- COMMAND [ARG ...]";
 const HELP_ELEMENTS: &str = "  --no-output-scan  disables output redaction. (Optional)\n  VAR               either KEY, an environment variable key, or\n                    KEY=keepassxc://entry/field, which resolves a field\n                    from KeePassXC with Browser Integration enabled and\n                    assigns to an environment variable.\n  --                delimits the sources from the command.\n  COMMAND           is the program to run, resolved from PATH.\n  ARG               is passed to the command unaltered.\n";
+const HELP_INVOCATIONS: &str = "  credact --help\n  credact --version\n";
 
 fn write_stdout(text: &str) {
     let mut stdout = std::io::stdout();
@@ -44,7 +45,7 @@ fn run() -> i32 {
 
     let invocation = match parse_arguments(arguments) {
         Ok(ParseResult::Help) => {
-            write_stdout(&format!("{USAGE}\n\n{HELP_ELEMENTS}"));
+            write_stdout(&format!("{USAGE}\n\n{HELP_ELEMENTS}\n{HELP_INVOCATIONS}"));
 
             return 0;
         }

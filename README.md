@@ -32,6 +32,11 @@ Many commands, through a shell:
 credact API_TOKEN=keepassxc://service/password -- bash -c 'curl -H "Authorization: Bearer $API_TOKEN" https://example.com && deploy'
 ```
 
+```sh
+credact --help
+credact --version
+```
+
 ## Licence
 
 MIT
