@@ -5,7 +5,7 @@ use serde_json::Value;
 use zeroize::Zeroizing;
 
 use crate::keepassxc_client::{KeePassXcError, LookupSession};
-use crate::parse_arguments::{CredactError, CredactErrorKind, SecretSource};
+use crate::parse_arguments::{CredactError, SecretSource};
 
 const NO_SINGLE_ENTRY_CLASS: &str = "keepassxc reply had no single usable entry";
 const INVALID_FIELD_CLASS: &str = "reference field was invalid";
@@ -224,11 +224,7 @@ pub fn resolve_secrets(
         };
 
         failure.get_or_insert_with(|| {
-            CredactError::new(
-                CredactErrorKind::Resolution,
-                1,
-                format!("credact: {}: {failure_class}", source.name()),
-            )
+            CredactError::new(1, format!("credact: {}: {failure_class}", source.name()))
         });
     }
 

@@ -7,7 +7,6 @@ fn arguments(values: &[&str]) -> Vec<OsString> {
 fn expect_usage_failure(values: &[&str]) {
     let error = parse_arguments(arguments(values)).expect_err("expected a usage failure");
 
-    assert_eq!(error.kind, CredactErrorKind::Usage);
     assert_eq!(error.exit_code, 2);
 }
 

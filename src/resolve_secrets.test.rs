@@ -104,7 +104,6 @@ fn error_of(outcome: &ResolutionOutcome) -> &CredactError {
 fn assert_resolution_failure(outcome: &ResolutionOutcome, failure_class: &str) {
     let error = error_of(outcome);
 
-    assert_eq!(error.kind, CredactErrorKind::Resolution);
     assert_eq!(error.exit_code, 1);
     assert!(
         error.message.contains(failure_class),

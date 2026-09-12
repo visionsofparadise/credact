@@ -123,11 +123,7 @@ fn maps_a_missing_command_to_127() {
 
     assert_eq!(
         run(&invocation, &[]).result,
-        Err(CredactError::new(
-            CredactErrorKind::Spawn,
-            127,
-            "credact: command was not found"
-        ))
+        Err(CredactError::new(127, "credact: command was not found"))
     );
 }
 
@@ -149,7 +145,6 @@ fn fails_with_the_output_limit_when_both_streams_exceed_the_cap() {
     assert_eq!(
         outcome.result,
         Err(CredactError::new(
-            CredactErrorKind::OutputLimit,
             1,
             "credact: command output exceeded 64 MiB"
         ))

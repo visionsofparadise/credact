@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use process_wrap::std::{ChildWrapper, CommandWrap};
 
-use crate::parse_arguments::{CredactError, CredactErrorKind, Invocation};
+use crate::parse_arguments::{CredactError, Invocation};
 use crate::redact_buffer::redact_buffer;
 use crate::resolve_secrets::ResolvedSecret;
 use crate::terminate_child::terminate_child;
@@ -48,7 +48,7 @@ struct Budget {
 }
 
 fn output_error(message: &str) -> CredactError {
-    CredactError::new(CredactErrorKind::Output, 1, message)
+    CredactError::new(1, message)
 }
 
 fn read_error_of(stream: Stream) -> CredactError {
@@ -91,28 +91,16 @@ pub fn child_environment_of(
 
 pub fn spawn_error_of(error: &std::io::Error) -> CredactError {
     if error.kind() == ErrorKind::NotFound {
-        return CredactError::new(
-            CredactErrorKind::Spawn,
-            127,
-            "credact: command was not found",
-        );
+        return CredactError::new(127, "credact: command was not found");
     }
 
     if error.kind() == ErrorKind::PermissionDenied
         || error.raw_os_error() == Some(NOT_EXECUTABLE_OS_ERROR)
     {
-        return CredactError::new(
-            CredactErrorKind::Spawn,
-            126,
-            "credact: command is not executable",
-        );
+        return CredactError::new(126, "credact: command is not executable");
     }
 
-    CredactError::new(
-        CredactErrorKind::Spawn,
-        1,
-        "credact: command could not start",
-    )
+    CredactError::new(1, "credact: command could not start")
 }
 
 pub fn exit_code_of(status: ExitStatus) -> i32 {
@@ -362,11 +350,7 @@ impl Capture {
         match event {
             Event::LimitExceeded => Err(failure_after_termination(
                 child,
-                CredactError::new(
-                    CredactErrorKind::OutputLimit,
-                    1,
-                    "credact: command output exceeded 64 MiB",
-                ),
+                CredactError::new(1, "credact: command output exceeded 64 MiB"),
             )),
             Event::Drained(stream, Err(_)) => {
                 Err(failure_after_termination(child, read_error_of(stream)))

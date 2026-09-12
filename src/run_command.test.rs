@@ -61,7 +61,7 @@ fn maps_spawn_errors_to_exit_codes() {
     for (error, exit_code, message) in cases {
         assert_eq!(
             spawn_error_of(&error),
-            CredactError::new(CredactErrorKind::Spawn, exit_code, message)
+            CredactError::new(exit_code, message)
         );
     }
 }

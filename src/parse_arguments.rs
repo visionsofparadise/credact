@@ -40,26 +40,15 @@ pub enum ParseResult {
     Run(Invocation),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CredactErrorKind {
-    Usage,
-    Resolution,
-    Spawn,
-    OutputLimit,
-    Output,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CredactError {
-    pub kind: CredactErrorKind,
     pub exit_code: i32,
     pub message: String,
 }
 
 impl CredactError {
-    pub fn new(kind: CredactErrorKind, exit_code: i32, message: impl Into<String>) -> Self {
+    pub fn new(exit_code: i32, message: impl Into<String>) -> Self {
         Self {
-            kind,
             exit_code,
             message: message.into(),
         }
@@ -75,7 +64,7 @@ impl std::fmt::Display for CredactError {
 impl std::error::Error for CredactError {}
 
 fn fail_usage<T>(message: &str) -> Result<T, CredactError> {
-    Err(CredactError::new(CredactErrorKind::Usage, 2, message))
+    Err(CredactError::new(2, message))
 }
 
 fn is_valid_environment_name(name: &str) -> bool {
