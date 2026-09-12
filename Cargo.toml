@@ -1,6 +1,6 @@
 [package]
 name = "credact"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Matt Cavender"]
 description = "Inject credentials into a child process and redact them from its output"
 license = "MIT"

@@ -2,7 +2,7 @@
 	"name": "credact",
 	"author": "Matt Cavender",
 	"license": "MIT",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Inject credentials into a child process and redact them from its output",
 	"private": true,
 	"type": "module",
