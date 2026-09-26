@@ -73,6 +73,7 @@ jobs:
            with:
               name: notices
               path: THIRD-PARTY-NOTICES.txt
+              retention-days: 1
               if-no-files-found: error
 
    build:
@@ -154,6 +155,7 @@ jobs:
            if: always() && runner.os == 'Windows'
            with:
               name: installer-report-${{ matrix.platform }}
+              retention-days: 1
               path: .scratch/installer/report.json
               include-hidden-files: true
               if-no-files-found: warn
@@ -179,8 +181,27 @@ jobs:
          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
            with:
               name: release-${{ matrix.target }}
+              retention-days: 1
               path: out/make/*
               if-no-files-found: error
+
+   cleanup-artifacts:
+      needs: [check, msrv, notices, build, publish]
+      if: ${{ always() && needs.check.result == 'success' && needs.msrv.result == 'success' && needs.notices.result == 'success' && needs.build.result == 'success' && (needs.publish.result == 'success' || needs.publish.result == 'skipped') }}
+      runs-on: ubuntu-24.04
+      permissions:
+         actions: write
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+           with:
+              persist-credentials: false
+         - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+           with:
+              node-version: 24
+         - name: Delete temporary workflow artifacts
+           env:
+              GH_TOKEN: ${{ github.token }}
+           run: node scripts/releaseRetention.mjs artifacts
 
    publish:
       needs: [check, msrv, notices, build]
@@ -208,3 +229,8 @@ jobs:
               GH_TOKEN: ${{ github.token }}
               RELEASE_DRAFT_ONLY: ${{ vars.CREDACT_RELEASE_REVIEW }}
            run: node scripts/release.mjs publish artifacts
+         - name: Delete older stable releases
+           if: ${{ vars.CREDACT_RELEASE_REVIEW != 'true' }}
+           env:
+              GH_TOKEN: ${{ github.token }}
+           run: node scripts/releaseRetention.mjs releases "v$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')"
