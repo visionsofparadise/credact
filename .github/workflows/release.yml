@@ -19,6 +19,15 @@ jobs:
            with:
               fetch-depth: 0
               persist-credentials: false
+         - name: Refuse a released version
+           env:
+              GH_TOKEN: ${{ github.token }}
+           run: |
+              tag="v$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')"
+              if [ "$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft -q .isDraft 2>/dev/null)" = false ]; then
+                 echo "::error::$tag is already released; bump the version"
+                 exit 1
+              fi
          - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
            with:
               node-version: 24
@@ -44,7 +53,7 @@ jobs:
            with:
               name: notices
               path: THIRD-PARTY-NOTICES.txt
-              retention-days: 1
+              retention-days: 7
               if-no-files-found: error
 
    build:
@@ -152,7 +161,7 @@ jobs:
          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
            with:
               name: release-${{ matrix.target }}
-              retention-days: 1
+              retention-days: 7
               path: out/make/*
               if-no-files-found: error
 
